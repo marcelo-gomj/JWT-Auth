@@ -1,5 +1,5 @@
 import axios, { AxiosError } from 'axios';
-import { parseCookies } from 'nookies';
+import { parseCookies, setCookie } from 'nookies';
 
 let cookies = parseCookies();
 
@@ -18,8 +18,26 @@ api.interceptors.response.use(response => {
             cookies = parseCookies();
 
             const { 'jwt-auth.refreshToken': refreshToken } = cookies;
-            
 
+            api.post('/refresh', {
+                refreshToken
+            }).then(response => {
+                const { token } = response.data;
+                
+                setCookie(undefined, 'jwt-auth.token', token, {
+                    maxAge: 60 * 60 * 24 * 30, // 30 days
+                    path: '/'
+                });
+    
+                setCookie(undefined,  'jwt-auth.refreshToken', response.data.refreshToken, {
+                    maxAge: 60 * 60 * 24 * 30, // 30 days
+                    path: '/'
+                });
+                
+                api.defaults.headers["Authorization"] = `Bearer ${token}`
+            })
+
+            
         }else{
 
         }
