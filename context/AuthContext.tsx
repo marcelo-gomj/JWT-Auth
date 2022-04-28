@@ -1,7 +1,7 @@
 import { createContext, ReactNode, useEffect, useState } from 'react';
 import Router from 'next/router';
 
-import { api } from '../services/api';
+import { api, signOut } from '../services/api';
 import { parseCookies, setCookie } from 'nookies';
 
 type SignInCredentails = {
@@ -14,7 +14,7 @@ type AuthContextData = {
     isAuthenticated: boolean;
     user: User
 }
-
+ 
 type AuthProviderProps = {
     children : ReactNode;
 }
@@ -38,6 +38,8 @@ export function AuthProvider({children}: AuthProviderProps){
             api.get('/me').then( response => {
                 const { email, permissions, roles } = response.data;
                 setUser({ email, permissions, roles })
+            }).catch(() => {
+                signOut();
             })
         }
     }, [])
