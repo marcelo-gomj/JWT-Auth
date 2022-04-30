@@ -10,7 +10,8 @@ type SignInCredentails = {
 }
 
 type AuthContextData = {
-    signIn(credentials: SignInCredentails): Promise<void>;
+    signIn : (credentials: SignInCredentails) => Promise<void>;
+    signOut : () => void;
     isAuthenticated: boolean;
     user: User
 }
@@ -27,9 +28,14 @@ type User = {
 
 export const AuthContext = createContext({} as AuthContextData);
 
+const authChannel = new BroadcastChannel('auth');
+
+
 export function signOut(){
     destroyCookie(undefined, 'jwt-auth.token');
     destroyCookie(undefined, 'jwt-auth.refreshToken');
+
+    authChannel.postMessage('SignOut');
 
     Router.push('/');
 }
@@ -84,7 +90,7 @@ export function AuthProvider({children}: AuthProviderProps){
     }
 
     return (
-        <AuthContext.Provider value={{signIn, isAuthenticated, user}}>
+        <AuthContext.Provider value={{signIn, signOut, isAuthenticated, user}}>
             { children }
         </AuthContext.Provider>
     )
