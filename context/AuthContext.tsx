@@ -28,14 +28,13 @@ type User = {
 
 export const AuthContext = createContext({} as AuthContextData);
 
-const authChannel = new BroadcastChannel('auth');
-
+let authChannel: BroadcastChannel;
 
 export function signOut(){
     destroyCookie(undefined, 'jwt-auth.token');
     destroyCookie(undefined, 'jwt-auth.refreshToken');
 
-    authChannel.postMessage('SignOut');
+    authChannel.postMessage('signOut');
 
     Router.push('/');
 }
@@ -43,6 +42,20 @@ export function signOut(){
 export function AuthProvider({children}: AuthProviderProps){
     const [user, setUser] = useState<User>();
     const isAuthenticated = !!user;
+
+    useEffect(() => {
+        authChannel = new BroadcastChannel('auth');
+
+        authChannel.onmessage = (message) => {
+            switch(message.data){
+                case 'signOut':
+                    signOut();
+                    break;
+                default:
+                    break;
+            }
+        }
+    }, []);
 
     useEffect(()=> {
         const { "jwt-auth.token" : token } = parseCookies(); 
