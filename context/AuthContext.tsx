@@ -1,8 +1,8 @@
 import { createContext, ReactNode, useEffect, useState } from 'react';
 import Router from 'next/router';
 
-import { api, signOut } from '../services/api';
-import { parseCookies, setCookie } from 'nookies';
+import { destroyCookie, parseCookies, setCookie } from 'nookies';
+import { api } from '../services/apiClient';
 
 type SignInCredentails = {
     email: string;
@@ -27,6 +27,13 @@ type User = {
 
 export const AuthContext = createContext({} as AuthContextData);
 
+export function signOut(){
+    destroyCookie(undefined, 'jwt-auth.token');
+    destroyCookie(undefined, 'jwt-auth.refreshToken');
+
+    Router.push('/');
+}
+
 export function AuthProvider({children}: AuthProviderProps){
     const [user, setUser] = useState<User>();
     const isAuthenticated = !!user;
@@ -35,8 +42,10 @@ export function AuthProvider({children}: AuthProviderProps){
         const { "jwt-auth.token" : token } = parseCookies(); 
 
         if(token){
-            api.get('/me').then( response => {
+            api.get('/me')
+            .then( response => {
                 const { email, permissions, roles } = response.data;
+
                 setUser({ email, permissions, roles })
             }).catch(() => {
                 signOut();
@@ -44,12 +53,12 @@ export function AuthProvider({children}: AuthProviderProps){
         }
     }, [])
 
-    async function signIn({email, password}: SignInCredentails){
+    async function signIn({ email, password }: SignInCredentails){
         try{
             const response = await api.post('sessions', {
                 email, 
                 password
-            })
+            });
     
             const { token, refreshToken, roles, permissions } = response.data;
             
@@ -63,9 +72,9 @@ export function AuthProvider({children}: AuthProviderProps){
                 path: '/'
             });
             
-            setUser({email, roles, permissions})
+            setUser({ email, roles, permissions });
 
-            api.defaults.headers["Authorization"] = `Bearer ${token}`
+            api.defaults.headers["Authorization"] = `Bearer ${token}`;
 
             Router.push('/dashboard');
 
